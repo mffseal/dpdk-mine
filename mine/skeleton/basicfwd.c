@@ -111,6 +111,7 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool)
 			addr.addr_bytes[0], addr.addr_bytes[1],
 			addr.addr_bytes[2], addr.addr_bytes[3],
 			addr.addr_bytes[4], addr.addr_bytes[5]);
+	getchar();
 
 	/* Enable RX in promiscuous mode for the Ethernet device. */
 	//混杂模式
@@ -159,17 +160,24 @@ lcore_main(void)
 
 			/* Get burst of RX packets, from first port of pair. */
 			struct rte_mbuf *bufs[BURST_SIZE];
+			//返回收到的数据包数量
 			const uint16_t nb_rx = rte_eth_rx_burst(port, 0,
 					bufs, BURST_SIZE);
 
 			if (unlikely(nb_rx == 0))
 				continue;
+			
+			// printf("有东西了！ ---> %s\n", bufs);
+			// fflush(stdout);
 
 			/* Send burst of TX packets, to second port of pair. */
+			//返回实际存入传输环的数据包数量，传输环被填满可能导致实际数量小于指定数量nb_rx
+			//发送的数据包就是收到的数据包
 			const uint16_t nb_tx = rte_eth_tx_burst(port ^ 1, 0,
 					bufs, nb_rx);
 
 			/* Free any unsent packets. */
+			//实际发出的包数量少于指定数量，释放未发送的包缓存
 			if (unlikely(nb_tx < nb_rx)) {
 				uint16_t buf;
 				for (buf = nb_tx; buf < nb_rx; buf++)
